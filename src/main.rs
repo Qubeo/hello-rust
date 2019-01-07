@@ -2,6 +2,15 @@ use std::io;
 use std::fmt;
 
 
+#[cfg(feature = "flame_it")]
+extern crate flame;
+#[cfg(feature = "flame_it")]
+#[macro_use] extern crate flamer;
+
+// as well as the following instead of `#[flame]`
+#[cfg_attr(feature = "flame_it", flame)]
+
+
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Cell {
@@ -9,11 +18,12 @@ pub enum Cell {
     Alive = 1,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]            // Removed the Debug trait, as it's not implemented for the fn, so the whole struct can't be cast as Debug.
 pub struct Grid {
     pub width: u32,
     pub height: u32,
-    pub cells: Vec<Cell>
+    pub cells: Vec<Cell>,
+    tick_fn: fn(&mut Grid, Vec<u8>)
 }
 
 
@@ -30,20 +40,21 @@ impl Grid {
         return Grid {
             width: w,       // Q: vs. just width, defined by let in the new() scope? Rust shortcut?
             height: h,      // A: Yep. More in "Destructuring Structs" manual section.
-            cells: new_cells
+            cells: new_cells,
+            tick_fn: Grid::tick_neighbor_matrix_1
         }
     }
 
     pub fn tick(&mut self) {
-        //let mut new_cells = self.cells.clone();
 
         let mut nm = self.compute_neighbor_matrix_0();
-        self.tick_neighbor_matrix(nm);
+        //let mut self_v = &self;
+        (self.tick_fn)(self, nm);
     }
 
     pub fn get_index(&self, (x, y): (u32, u32)) -> u32 {
       // Optim: Could the wrapping be done here? But. How many times called, eh. N(?)
-      // Optim: This function itself should be done with.
+      // Optim: This function itself could be done with?
         
         let index = y * self.width + x;
         return index;
@@ -51,8 +62,7 @@ impl Grid {
 
     pub fn get_x_y(&self, index: u32) -> (u32, u32) {
         let x = index % self.width;
-        let y = (index - x) / self.width;
-        
+        let y = (index - x) / self.width;        
         (x, y)
     }
 
@@ -60,13 +70,7 @@ impl Grid {
        8
     }
 
-    pub fn count_alive_neighbors_from_index(&self, index: u32) -> u8 {
-        
-        print!("{:?} ", self.get_x_y(index));
-        
-        8
-    }
-
+    #[cfg_attr(feature = "flame_it", flame)]
     pub fn compute_neighbor_matrix_0 (&self) -> Vec<u8> {
         // let mut neighbor_matrix: Vec<u8> = Vec::with_capacity(self.width as usize * self.height as usize);
         let mut neighbor_matrix = vec![0; self.width as usize * self.height as usize];
@@ -89,29 +93,29 @@ impl Grid {
             }
         }
 
-        for line in neighbor_matrix.as_slice().chunks(self.width as usize)
-            { println!("{:?}", line); }
+        // for line in neighbor_matrix.as_slice().chunks(self.width as usize)
+        //    { println!("{:?}", line); }
         
         return neighbor_matrix as Vec<u8>;
     }
 
     /// Changes internal state (cells), doesn't return anything.
     /// Q: Is that good? Side effects?
-    fn tick_neighbor_matrix(&mut self, alive_neighbor_matrix: Vec<u8>) {
-
-        let a: Vec<Cell> = self.cells.iter_mut().enumerate()
-            .map(|(i, cell)| { (match (*cell, alive_neighbor_matrix[i as usize]) {       // TODO: Z nějakýho důvodu se neprovádí. A: Aha, musím vrátit *cell.
+    #[cfg_attr(feature = "flame_it", flamer)]
+    fn tick_neighbor_matrix_0(&mut self, alive_neighbor_matrix: Vec<u8>) {
+        let a: () = self.cells.iter_mut().enumerate()                 // Type () as we don't actually map and use the collected items, we just change the *cell.
+            .map(|(i, cell)| { *cell = match (*cell, alive_neighbor_matrix[i as usize]) {   // TODO: Z nějakýho důvodu se neprovádí. A: Aha, musím vrátit *cell.
                     (Cell::Alive, 0..=1) => Cell::Dead,
                     (Cell::Dead, 3) => Cell::Alive,
                     (Cell::Alive, 4..=8) => Cell::Dead,
                     (otherwise, _) => otherwise
-            })           
-            }).collect();
-        // Map is zazy, doesn't do anything until consumed. 
+            }           
+            }).collect(); // Map is zazy, doesn't do anything until consumed. 
 
-        print!("a{:?}", a);
+        
+    }
 
-        /*
+    fn tick_neighbor_matrix_1(&mut self, alive_neighbor_matrix: Vec<u8>) {        
         // Optim: Why bother with taking the current state into account instead of just working with the number of alive neighbors to construct the return value?
         for (i, cell) in self.cells.iter_mut().enumerate() {
             *cell = match (*cell, alive_neighbor_matrix[i as usize]) {
@@ -119,23 +123,9 @@ impl Grid {
                     (Cell::Dead, 3) => Cell::Alive,
                     (Cell::Alive, 4..=8) => Cell::Dead,
                     (otherwise, _) => otherwise
-
-                /*
-                    (Cell::Alive, x) if x < 2 => Cell::Dead,
-                    // Rule 2: Any live cell with two or three live neighbours
-                    // lives on to the next generation.
-                    (Cell::Alive, 2) | (Cell::Alive, 3) => Cell::Alive,             // Q: Optim: Isn't this redundant?
-                    // Rule 3: Any live cell with more than three live
-                    // neighbours dies, as if by overpopulation.
-                    (Cell::Alive, x) if x > 3 => Cell::Dead,                        // Q: Optim: Is there a benefit of using if instead of range?
-                    // Rule 4: Any dead cell with exactly three live neighbours
-                    // becomes a live cell, as if by reproduction.
-                    (Cell::Dead, 3) => Cell::Alive,
-                    // All other cells remain in the same state.
-                    (otherwise, _) => otherwise,    */
             }
-        };        */
-    }
+        };
+    } 
 
     pub fn count_alive_neighbors_1(&self, (x, y): (u32, u32)) -> u8 {
 
@@ -233,16 +223,7 @@ fn main() {
 
     let mut grid = Grid::new();
 
-    // let neighbor = grid.compute_neighbor_matrix_0();
-    
-    for i in 1..4 {
-        grid.tick();
-        print!("{:}", grid);
-    }
-
-    
-
-
+    // let neighbor = grid.compute_neighbor_matrix_0();    
 }
 
 fn fill_grid(grid: Grid) -> Grid {

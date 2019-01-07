@@ -2,4 +2,6 @@
 **/*.rs.bk
 main.exe
 main.pdb
+lib.exe
+lib.pdb
 

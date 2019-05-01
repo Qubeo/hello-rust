@@ -23,12 +23,17 @@ struct u32ff {
     pub val: u32
 }
 
-impl Add<R> for u32ff {
-    
+impl Add<u32> for u32ff
+    //where L: Add<R, Output=u32>
+{
+    // type Output = u32;
     type Output = u32ff;
-    
-    pub fn add(self, rhs: Self) -> Self {
-        (self.val + rhs) % self.size
+    // type Output = O;
+
+    // fn add(self, rhs: <R>) -> Self {
+
+    fn add(self, rhs: u32) -> Self {
+        u32ff { size: self.size, val: (self.val + rhs) % self.size }
     }
 }
 

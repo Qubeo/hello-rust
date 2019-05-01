@@ -1,5 +1,6 @@
 use std::fmt;
 use std::io;
+use std::ops::{ Add, Mul, Sub, Div };
 
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -16,6 +17,29 @@ pub struct Grid {
     tick_fn: fn(&mut Grid, Vec<u8>)
 }
 
+#[derive(Clone, Copy)]
+struct u32ff {
+    size: u32,
+    pub val: u32
+}
+
+impl Add<R> for u32ff {
+    
+    type Output = u32ff;
+    
+    pub fn add(self, rhs: Self) -> Self {
+        (self.val + rhs) % self.size
+    }
+}
+
+
+#[derive(Clone)]            // Removed the Debug trait, as it's not implemented for the fn, so the whole struct can't be cast as Debug.
+pub struct GridFinite {
+    pub width: u32,
+    pub height: u32,
+    pub cells: Vec<Cell>,
+    tick_fn: fn(&mut Grid, Vec<u8>)
+}
 
 impl Grid {
     pub fn new() -> Grid {

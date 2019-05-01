@@ -1,8 +1,12 @@
 use std::io;
 use std::fmt;
+use rand::Rng;
 
 mod grid;
+mod playground;
+
 use grid::{*};
+
 
 /*
 #[cfg(feature = "flame_it")]
@@ -17,6 +21,10 @@ fn main() {
 
     println!("Hello, Rust!");
     let mut uni = Grid::new();
+
+    let rnn = rand::thread_rng().gen::<u8>() % 9;
+
+    println!("Random number: {}", rnn);
 
     for i in 0..=4 {
         uni.tick();

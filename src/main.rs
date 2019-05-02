@@ -26,6 +26,14 @@ fn main() {
 
     println!("Random number: {}", rnn);
 
+    let mut tff: u32ff = u32ff { size: 16, val: 32 };
+
+    tff = tff + 24;
+
+    let a: u32 = tff;
+
+    println!("Test u32ff: {:?}", tff);
+
     for i in 0..=4 {
         uni.tick();
         // print!("{}", uni.render());

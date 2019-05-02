@@ -17,25 +17,54 @@ pub struct Grid {
     tick_fn: fn(&mut Grid, Vec<u8>)
 }
 
-#[derive(Clone, Copy)]
-struct u32ff {
-    size: u32,
+#[derive(Clone, Copy, Debug)]
+pub struct u32ff {
+    pub size: u32,
     pub val: u32
+}
+
+
+/* impl u32ff {
+    pub fn new(self, )
+}*/
+
+impl From<u32ff> for u32 {
+    fn from(see: u32ff) -> u32 {
+        see.val
+    }
 }
 
 impl Add<u32> for u32ff
     //where L: Add<R, Output=u32>
 {
     // type Output = u32;
-    type Output = u32ff;
     // type Output = O;
-
+    type Output = u32ff;
+    
     // fn add(self, rhs: <R>) -> Self {
-
     fn add(self, rhs: u32) -> Self {
         u32ff { size: self.size, val: (self.val + rhs) % self.size }
     }
 }
+
+impl Mul<u32> for u32ff
+{
+    type Output = u32ff;
+    
+    fn mul(self, rhs: u32) -> Self {
+        u32ff { size: self.size, val: (self.val * rhs) % self.size }
+    }
+}
+
+impl Sub<u32> for u32ff
+{
+    type Output = u32ff;
+    
+    fn sub(self, rhs: u32) -> Self {
+        u32ff { size: self.size, val: (self.val - rhs) % self.size }
+    }
+}
+
 
 
 #[derive(Clone)]            // Removed the Debug trait, as it's not implemented for the fn, so the whole struct can't be cast as Debug.

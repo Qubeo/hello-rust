@@ -30,9 +30,10 @@ fn main() {
 
     tff = tff + 24;
 
-    let a: u32 = tff;
+    let a: u32 = tff.into();
 
     println!("Test u32ff: {:?}", tff);
+    println!("Test u32ff a: {:?}", a);
 
     for i in 0..=4 {
         uni.tick();
